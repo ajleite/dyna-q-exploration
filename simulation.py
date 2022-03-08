@@ -26,7 +26,7 @@ class Simulation:
             hold_steps = 0
             while not t:
                 if hold_steps == 0:
-                    a = self.agent.act(s, 500/(n+1)+0.15)
+                    a = self.agent.act(s, (250)/(n+1) + 0.1)
                     last_a = a
                     hold_steps = 0
                 else:
@@ -42,6 +42,7 @@ class Simulation:
                 # ar = -1 if t else 0
                 ar = r
                 mean_loss = self.agent.store(s, a, ar, t)
+                s = s2
 
                 if not mean_loss is None:
                     self.loss_samples.append((timestep, mean_loss))
@@ -52,6 +53,13 @@ class Simulation:
                     if last_ep_index < len(self.episode_rewards):
                         print(np.mean(self.episode_rewards[last_ep_index:],axis=0)[1])
                         last_ep_index = len(self.episode_rewards)
+                    import matplotlib.pyplot as plt
+                    S = self.agent.experience_buffer.S_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
+                    A = self.agent.experience_buffer.A_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
+                    Q = self.agent.experience_buffer.Q_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
+                    plt.scatter(S[A == 0], Q[A == 0], alpha=.1)
+                    plt.scatter(S[A == 1], Q[A == 1], alpha=.1)
+                    plt.show()
 
 
                 total_r += r

@@ -37,12 +37,12 @@ def test_MC_Agent():
     obs_shape = (1,)
     action_count = 2
 
-    Q_network = network.FFANN(obs_shape, action_count, [10, 5], 0.0001)
+    Q_network = network.FFANN(obs_shape, action_count, [20, 10], 0.0001)
     discount_factor = 0.99
-    experience_buffer_size = 40000
-    training_samples_per_experience_step = 64
-    minibatch_size = 256
-    experience_period_length = 4096
+    experience_buffer_size = 20000
+    training_samples_per_experience_step = 512
+    minibatch_size = 1024
+    experience_period_length = 8192
 
     ag = agent.MonteCarloAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length)
     task = TrivialTask(task_rng) #gym.make('CartPole-v1')

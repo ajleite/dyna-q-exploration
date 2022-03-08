@@ -109,7 +109,7 @@ class MonteCarloBuffer:
 
         sample_indices = rng.integers(limit_index, size=(batch_size))
 
-        return self.S_samples[sample_indices], util.make_one_hot(self.A_samples[sample_indices], self.action_count), self.Q_samples[sample_indices]
+        return self.S_samples[sample_indices], self.A_samples[sample_indices], self.Q_samples[sample_indices]
 
     def clear(self):
         self.cur_index = 0
@@ -193,7 +193,7 @@ class TD0Buffer:
         # construct the indices for S2 by adding 1 to the existing sample indices, being sure to wrap around.
         next_indices = np.where(sample_indices == self.buffer_size - 1, 0, sample_indices + 1)
 
-        return self.S_samples[sample_indices], util.make_one_hot(self.A_samples[sample_indices], self.action_count), \
+        return self.S_samples[sample_indices], self.A_samples[sample_indices], \
             self.R_samples[sample_indices], self.T_samples[sample_indices], self.S_samples[next_indices]
 
     def clear(self):
