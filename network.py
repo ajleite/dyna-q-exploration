@@ -48,7 +48,7 @@ class FFANN:
         return Q_loss
 
     def copy_from(self, other, amount):
-        for self_w, other_w in zip(other.keras_network.weights, self.keras_network.weights):
+        for self_w, other_w in zip(self.keras_network.weights, other.keras_network.weights):
             self_w.assign(self_w*(1-amount) + other_w*amount)
 
     def copy(self):

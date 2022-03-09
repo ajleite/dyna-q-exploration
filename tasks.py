@@ -2,6 +2,9 @@ import numpy as np
 
 import gym
 
+import pybullet_data
+import pybulletgym
+
 def downscale(image):
 	new_image = np.zeros((image.shape[0]//2, image.shape[1]//2, image.shape[2]), image.dtype)
 	for new_row in range(new_image.shape[0]):
@@ -49,3 +52,36 @@ class PongTask:
 			old_obs = self.obs_buffer[0]
 		else:
 			old_obs = self.obs_buffer[self.obs_index]
+
+class CartPoleTask:
+	def __init__(self):
+		self.cartpole_env = gym.make("InvertedPendulumMuJoCoEnv-v0")
+	def reset(self):
+		return self.cartpole_env.reset()
+	def step(self, action):
+		return self.cartpole_env.step(((-1.,), (1.,))[action])
+	def render(self):
+		return self.cartpole_env.render(self)
+
+class TrivialTask:
+    def __init__(self, rng):
+        self.rng = rng
+        self.reset()
+    def step(self, action):
+        orig_lt0 = self.loc < 0
+        if action:
+            self.loc += .1
+        else:
+            self.loc -= .1
+
+        if self.loc <= -1 or self.loc >= 1:
+            return (self.loc, -1, True, None)
+
+        now_lt0 = self.loc < 0
+        if orig_lt0 and not now_lt0 or now_lt0 and not orig_lt0:
+            return (self.loc, 1, True, None)
+
+        return (np.array((self.loc,)), 0, False, None)
+    def reset(self):
+        self.loc = self.rng.random()*2-1
+        return np.array((self.loc,))

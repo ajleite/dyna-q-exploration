@@ -69,9 +69,14 @@ class Simulation:
                     # import matplotlib.pyplot as plt
                     # S = self.agent.experience_buffer.S_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
                     # A = self.agent.experience_buffer.A_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
+                    # T = self.agent.experience_buffer.T_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
                     # Q = self.agent.experience_buffer.R_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
-                    # plt.scatter(S[A == 0], Q[A == 0], alpha=.1)
-                    # plt.scatter(S[A == 1], Q[A == 1], alpha=.1)
+                    # Q += self.agent.target_Q_network.apply_V(S) * self.agent.discount_factor
+                    # plt.subplot(1, 2, 1)
+                    # plt.scatter(S[A == 0][:,2], S[A == 0][:,3], c=Q[A == 0], alpha=.1)
+                    # plt.subplot(1, 2, 2)
+                    # plt.scatter(S[A == 1][:,2], S[A == 1][:,3], c=Q[A == 1], alpha=.1)
+                    # plt.colorbar()
                     # plt.show()
 
 
