@@ -35,5 +35,17 @@ class PongTask:
 		self.obs_buffer = [None, None, None, None]
 		self.obs_index = -4
 	def reset(self):
+		self.obs_buffer = [None, None, None, None]
+		self.obs_index = -4
+
 		obs = self.pong_env.reset()
+		self.obs_buffer[self.obs_index] = obs
+		self.obs_index += 1
+
 		return preprocess(downscale(obs))
+	def step(self, action):
+		obs, reward, terminal, info = self.pong_env.step(action)
+		if self.obs_index < 0:
+			old_obs = self.obs_buffer[0]
+		else:
+			old_obs = self.obs_buffer[self.obs_index]

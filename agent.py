@@ -26,7 +26,7 @@ class BaseAgent:
         self.possible_actions = np.arange(self.action_count)
 
         self.Q_network = Q_network
-        self.target_Q_network = self.Q_network.copy()
+        self.target_Q_network = self.Q_network.zero_like()
         self.target_Q_network_update_rate = target_Q_network_update_rate
 
         self.experience_buffer = experience_buffer

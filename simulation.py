@@ -64,10 +64,12 @@ class Simulation:
 
                     epsilon = self.epsilon_init * (1 - epsilon_coordinate) + self.epsilon_final * epsilon_coordinate
 
+                    # print(self.agent.Q_network.keras_network(np.linspace(-1, 1, 11).reshape(-1, 1)))
+
                     # import matplotlib.pyplot as plt
                     # S = self.agent.experience_buffer.S_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
                     # A = self.agent.experience_buffer.A_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
-                    # Q = self.agent.experience_buffer.Q_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
+                    # Q = self.agent.experience_buffer.R_samples[self.agent.experience_buffer.cur_index-1000:self.agent.experience_buffer.cur_index]
                     # plt.scatter(S[A == 0], Q[A == 0], alpha=.1)
                     # plt.scatter(S[A == 1], Q[A == 1], alpha=.1)
                     # plt.show()
