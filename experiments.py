@@ -34,20 +34,20 @@ def test_MC_Agent():
     agent_rng = np.random.default_rng(5)
     task_rng = np.random.default_rng(6)
 
-    obs_shape = (1,)
+    obs_shape = (4,)
     action_count = 2
 
     Q_network = network.FFANN(obs_shape, action_count, [20, 10], 0.0001)
     discount_factor = 0.99
-    experience_buffer_size = 20000
-    training_samples_per_experience_step = 512
+    experience_buffer_size = 100000
+    training_samples_per_experience_step = 256
     minibatch_size = 1024
     experience_period_length = 8192
 
     ag = agent.MonteCarloAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length)
-    task = TrivialTask(task_rng) #gym.make('CartPole-v1')
+    task = gym.make('CartPole-v1')
 
-    sim = simulation.Simulation(ag, task, 100000)
+    sim = simulation.Simulation(ag, task, 100000, 1.0, 0.1, 10000)
     sim.run(False)
 
 def test_TD0_Agent():
@@ -56,19 +56,19 @@ def test_TD0_Agent():
     obs_shape = (4,)
     action_count = 2
 
-    Q_network = network.FFANN(obs_shape, action_count, [50, 40], 0.001)
-    discount_factor = 0.9
+    Q_network = network.FFANN(obs_shape, action_count, [5], 0.0001)
+    discount_factor = 0.99
     experience_buffer_size = 40000
-    training_samples_per_experience_step = 64
-    minibatch_size = 256
-    experience_period_length = 512
-    target_Q_network_update_rate = 0.001
+    training_samples_per_experience_step = 1024
+    minibatch_size = 1024
+    experience_period_length = 1024
+    target_Q_network_update_rate = 0.0000001
 
     ag = agent.TD0Agent(rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
     task = gym.make('CartPole-v1')
 
     sim = simulation.Simulation(ag, task, 100000)
-    sim.run(True)
+    sim.run(False)
 
 if __name__ == '__main__':
     test_MC_Agent()

@@ -4,7 +4,7 @@ import experience_store
 import util
 
 
-def get_TD0_target_values(S, A, R, T, S2, target_V_function, action_count, discount_factor):
+def get_TD0_target_values(S, A, R, T, S2, target_V_function, discount_factor):
     ''' Used to get a target value for the TD0 algorithm. '''
 
     sample_count = S.shape[0]
@@ -44,7 +44,7 @@ class BaseAgent:
         if epsilon and self.rng.random() < epsilon:
             return self.rng.integers(self.action_count)
 
-        return self.Q_network.apply_A(obs)[0]
+        return np.array(self.Q_network.apply_A(np.expand_dims(obs, axis=0))[0])
 
     def store(self, obs, action, reward, terminal):
         self.experience_buffer.store(obs, action, reward, terminal)
@@ -72,7 +72,7 @@ class BaseAgent:
                 total_target_update = 1 - (1-self.target_Q_network_update_rate)**total_training_samples
                 self.target_Q_network.copy_from(self.Q_network, amount=total_target_update)
 
-            print(self.Q_network.keras_network(np.linspace(-1, 1, 11).reshape(-1, 1)))
+            # print(self.Q_network.keras_network(np.linspace(-1, 1, 11).reshape(-1, 1)))
 
             self.experience_period_step = 0
 
@@ -99,6 +99,6 @@ class TD0Agent(BaseAgent):
 
     def sample_target_values(self, minibatch_size):
         S, A, R, T, S2 = self.experience_buffer.sample_SARTS2(minibatch_size, self.rng)
-        Q = get_TD0_target_values(S, A, R, T, S2, self.target_Q_network.apply, self.action_count, self.discount_factor)
+        Q = get_TD0_target_values(S, A, R, T, S2, self.target_Q_network.apply_V, self.discount_factor)
 
         return S, A, Q

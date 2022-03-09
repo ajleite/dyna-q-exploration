@@ -29,7 +29,7 @@ class FFANN:
 
     @tf.function
     def apply_V(self, S):
-        return tf.max(self.keras_network(S), axis=1)
+        return tf.reduce_max(self.keras_network(S), axis=1)
 
     @tf.function
     def apply_A(self, S):
