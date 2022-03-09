@@ -94,16 +94,29 @@ def test_MC_Agent_Pong():
 
         return linear_decisions_2
 
+    def boring_network_factory(input):
+        conv1 = tf.keras.layers.Conv2D(24, 3, padding='same', activation='relu')(input) # params: 6x3x3x24+24, size: 80x80x24
+        pool1 = tf.keras.layers.MaxPool2D(pool_size=(2, 2), padding='same')(conv1) # size: 40x40x24
+        conv2 = tf.keras.layers.Conv2D(384, 4, padding='same', activation='relu')(pool1) # params: 24x4x4x384+384, size: 40x40x384
+        pool2 = tf.keras.layers.MaxPool2D(pool_size=(4, 4), padding='same')(conv2) # size: 10x10x384
+        conv3 = tf.keras.layers.Conv2D(128, 3, padding='same', activation='relu')(pool2) # params: 384x3x3x128+128, size: 10x10x128
 
-    Q_network = network.CNN(obs_shape, action_count, network_factory, 0.0001)
+        linear_decisions_1 = tf.keras.layers.Dense(200, activation='relu')(conv3) # params: 128x10x10x200+200, size: 200
+        linear_decisions_2 = tf.keras.layers.Dense(100, activation='relu')(linear_decisions_1) # params: 200x100+100, size: 100
+        linear_decisions_3 = tf.keras.layers.Dense(10, activation='relu')(linear_decisions_2) # params: 100x10+10, size: 10
+
+        return linear_decisions_2
+
+
+    Q_network = network.CNN(obs_shape, action_count, network_factory, 0.0004)
     discount_factor = 0.99
     experience_buffer_size = 100000
-    training_samples_per_experience_step = 256
-    minibatch_size = 1024
+    training_samples_per_experience_step = 64
+    minibatch_size = 512
     experience_period_length = 8192
 
     ag = agent.MonteCarloAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length)
-    task = tasks.PongTask()
+    task = tasks.PongTask(task_rng)
 
     sim = simulation.Simulation(ag, task, 100000, 1.0, 0.1, 10000)
     sim.run(False)

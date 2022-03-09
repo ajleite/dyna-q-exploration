@@ -61,6 +61,7 @@ class BaseAgent:
                 S, A, Q = self.sample_target_values(self.minibatch_size)
                 if S.size > 0:
                     total_loss += self.Q_network.fit(S, A, Q)
+                    print(num_minibatches, _, total_loss)
 
             if last_minibatch_size:
                 S, A, Q = self.sample_target_values(last_minibatch_size)
