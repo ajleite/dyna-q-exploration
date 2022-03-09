@@ -78,15 +78,17 @@ def test_MC_Agent(seed, config, *args, **kwargs):
     discount_factor = 0.99
     experience_buffer_size = 100000
     training_samples_per_experience_step = 256 // sample_divisor
-    minibatch_size = 1024
+    minibatch_size = 512
     experience_period_length = 8192
 
     ag = agent.MonteCarloAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length)
+    if 'Pong' in task_name:
+        ag.use_tqdm = True
 
     sim = simulation.Simulation(ag, task, 4000, 1.0, 0.1, 10000, path=f'MC-{task_name}-{seed}.pickle')
     sim.run(False)
 
-def test_FQI_Agent(seed, config, *args, **kwargs):
+def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
     agent_rng = np.random.default_rng(seed)
     task_rng = np.random.default_rng(seed+234579672983459873)
 
@@ -95,14 +97,26 @@ def test_FQI_Agent(seed, config, *args, **kwargs):
     discount_factor = 0.99
     experience_buffer_size = 100000
     training_samples_per_experience_step = 2048 // sample_divisor
-    minibatch_size = 1024
+    minibatch_size = 512
     experience_period_length = 512
     target_Q_network_update_rate = 0.000001
 
     ag = agent.TD0Agent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
+    if 'Pong' in task_name:
+        ag.use_tqdm = True
 
-    sim = simulation.Simulation(ag, task, 4000, 1.0, 0.1, 100000, path=f'FQI-{task_name}-{seed}.pickle')
-    sim.run(True)
+    if random_actions:
+        task_name = 'RandomActions-'+task_name
+        epsilon_final = 1.0
+    else:
+        epsilon_final = 0.1
+
+    sim = simulation.Simulation(ag, task, 4000, 1.0, epsilon_final, 100000, path=f'FQI-{task_name}-{seed}.pickle')
+    sim.run(False)
+
+    if random_actions:
+        sim.best_weights = agent.Q_network.keras_network.get_weights()
+        sim.save_trace()
 
 def test_DQN_Agent(seed, config, *args, **kwargs):
     agent_rng = np.random.default_rng(seed)
@@ -113,7 +127,7 @@ def test_DQN_Agent(seed, config, *args, **kwargs):
     discount_factor = 0.99
     experience_buffer_size = 100000
     training_samples_per_experience_step = 2048 // sample_divisor
-    minibatch_size = 1024
+    minibatch_size = 512
     experience_period_length = 1
     target_Q_network_update_rate = 0.00001
 
@@ -123,4 +137,4 @@ def test_DQN_Agent(seed, config, *args, **kwargs):
     sim.run(False)
 
 if __name__ == '__main__':
-    test_MC_Agent(1, pong_config, boring_network=True)
+    test_FQI_Agent(1, cart_pole_config, random_actions=True)
