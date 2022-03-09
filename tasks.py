@@ -64,7 +64,12 @@ class PongTask:
 		if self.obs_index >= 3:
 			self.obs_index = 0
 
-		return np.concatenate([obs, old_obs], axis=2)
+		combined_obs = np.concatenate([obs, old_obs], axis=2)
+
+		if reward:
+			terminal = 1
+
+		return combined_obs, reward, terminal, info
 
 
 

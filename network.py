@@ -108,12 +108,12 @@ class CNN:
             self_w.assign(self_w*(1-amount) + other_w*amount)
 
     def copy(self):
-        other = FFANN(self.obs_shape, self.action_count, self.hidden_layer_sizes, self.learning_rate)
+        other = CNN(self.obs_shape, self.action_count, self.network_factory, self.learning_rate)
         other.copy_from(self, 1)
         return other
 
     def zero_like(self):
-        other = FFANN(self.obs_shape, self.action_count, self.hidden_layer_sizes, self.learning_rate)
+        other = CNN(self.obs_shape, self.action_count, self.network_factory, self.learning_rate)
         for other_w in other.keras_network.weights:
             other_w.assign(tf.zeros_like(other_w))
         return other
