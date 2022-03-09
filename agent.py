@@ -37,6 +37,8 @@ class BaseAgent:
 
         self.experience_period_step = 0
 
+        self.use_tqdm = False
+
     def sample_target_values(self, minibatch_size):
         raise NotImplementedError()
 
@@ -57,11 +59,17 @@ class BaseAgent:
 
             total_loss = 0
 
-            for _ in range(num_minibatches):
+            if self.use_tqdm:
+                import tqdm
+                minibatches = tqdm.tqdm(range(num_minibatches))
+            else:
+                minibatches = range(num_minibatches)
+
+            for _ in minibatches:
                 S, A, Q = self.sample_target_values(self.minibatch_size)
                 if S.size > 0:
                     total_loss += self.Q_network.fit(S, A, Q)
-                    print(num_minibatches, _, total_loss)
+                    # print(num_minibatches, _, total_loss)
 
             if last_minibatch_size:
                 S, A, Q = self.sample_target_values(last_minibatch_size)

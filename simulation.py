@@ -1,7 +1,9 @@
+import pickle
+
 import numpy as np
 
 class Simulation:
-    def __init__(self, agent, task, num_episodes, epsilon_init, epsilon_final=None, epsilon_final_timestep=None):
+    def __init__(self, agent, task, num_episodes, epsilon_init, epsilon_final=None, epsilon_final_timestep=None, path=None):
         self.agent = agent
         self.task = task
 
@@ -9,6 +11,7 @@ class Simulation:
 
         self.loss_samples = []
         self.episode_rewards = []
+        self.episode_behavior_entropy = []
 
         self.epsilon_init = epsilon_init
         if not epsilon_final is None and not epsilon_final_timestep is None:
@@ -17,6 +20,19 @@ class Simulation:
         else:
             self.epsilon_final = epsilon_init
             self.epsilon_final_timestep = 1
+
+        self.best_weights = None
+        self.best_100_episode_return = None
+        self.path = path
+
+    def save_trace(self):
+        if not self.path:
+            return
+
+        to_save = {'best_weights': self.best_weights, 'best_100_episode_return': self.best_100_episode_return,
+            'episode_rewards': self.episode_rewards, 'loss_samples': self.loss_samples, 'episode_behavior_entropy': self.episode_behavior_entropy}
+
+        pickle.dump(to_save, open(self.path,'wb'))
 
     def run(self, render=False):
         timestep = 0
@@ -51,12 +67,6 @@ class Simulation:
                 if not mean_loss is None:
                     self.loss_samples.append((timestep, mean_loss))
                     # print('Loss: ', n, timestep, mean_loss)
-                    # print(n_left, n_right)
-                    n_left = 0
-                    n_right = 0
-                    if last_ep_index < len(self.episode_rewards):
-                        # print(np.mean(self.episode_rewards[last_ep_index:],axis=0)[1])
-                        last_ep_index = len(self.episode_rewards)
 
                     epsilon_coordinate = timestep / self.epsilon_final_timestep
                     if epsilon_coordinate > 1:
@@ -83,8 +93,35 @@ class Simulation:
                 total_r += r
                 timestep += 1
 
+                if timestep % 2000 == 0:
+                    if self.episode_rewards and self.loss_samples:
+                        print('episode', n, 'last episode:', 'reward', self.episode_rewards[-1], 'loss', self.loss_samples[-1], 'entropy', self.episode_behavior_entropy[-1])
+                    self.save_trace()
+
                 if render:
                     self.task.render()
 
+            # episode is over, record it
             self.episode_rewards.append((timestep, total_r))
-            print(n, total_r, np.mean(self.episode_rewards[-100:], axis=0)[1])
+
+            # calculate behavior entropy
+            total_actions = n_left + n_right
+            p_left = n_left / total_actions
+            p_right = n_right / total_actions
+            if p_left == 0 or p_right == 0:
+                entropy = 0.
+            else:
+                entropy = -np.log2(p_left)*p_left + -np.log2(p_right)*p_right
+            self.episode_behavior_entropy.append((timestep, entropy))
+            n_left = 0
+            n_right = 0
+
+            # calculate running average
+            if n >= 100:
+                mean_reward = np.mean(self.episode_rewards[-100:], axis=0)[1]
+                if self.best_100_episode_return is None or mean_reward > self.best_100_episode_return:
+                    self.best_100_episode_return = mean_reward
+                    self.best_weights = self.agent.Q_network.keras_network.get_weights()
+                if not n % 100:
+                    print('mean reward for episode', n-100, 'to', n, mean_reward)
+                    print('best is', self.best_100_episode_return)
