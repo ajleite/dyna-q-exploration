@@ -59,13 +59,16 @@ class BaseAgent:
 
             for _ in range(num_minibatches):
                 S, A, Q = self.sample_target_values(self.minibatch_size)
-                total_loss += self.Q_network.fit(S, A, Q)
+                if S.size > 0:
+                    total_loss += self.Q_network.fit(S, A, Q)
 
             if last_minibatch_size:
                 S, A, Q = self.sample_target_values(last_minibatch_size)
-                total_loss += self.Q_network.fit(S, A, Q)
+                if S.size > 0:
+                    total_loss += self.Q_network.fit(S, A, Q)
 
-            print(S[0], A[0], Q[0])
+            # if S.size > 0:
+            #     print(S[0], A[0], Q[0])
             mean_loss = np.sqrt(np.array(total_loss)) / total_training_samples
 
             if self.target_Q_network_update_rate:
@@ -99,6 +102,9 @@ class TD0Agent(BaseAgent):
 
     def sample_target_values(self, minibatch_size):
         S, A, R, T, S2 = self.experience_buffer.sample_SARTS2(minibatch_size, self.rng)
-        Q = get_TD0_target_values(S, A, R, T, S2, self.target_Q_network.apply_V, self.discount_factor)
+        if S.size > 0:
+            Q = get_TD0_target_values(S, A, R, T, S2, self.target_Q_network.apply_V, self.discount_factor)
+        else:
+            Q = np.zeros((), dtype=np.float32)
 
         return S, A, Q

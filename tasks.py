@@ -28,30 +28,45 @@ def preprocess(image):
 	is_ball = np.all(field == ball_color, axis=-1)
 	is_P1 = np.all(field == P1_color, axis=-1)
 	is_P2 = np.all(field == P2_color, axis=-1)
-	new_image = np.stack([is_ball, is_P1, is_P2], axis=2)
+	new_image = np.float32(np.stack([is_ball, is_P1, is_P2], axis=2))
 
 	return new_image
 
 class PongTask:
 	def __init__(self):
 		self.pong_env = gym.make('PongNoFrameskip-v0')
-		self.obs_buffer = [None, None, None, None]
-		self.obs_index = -4
+		self.obs_buffer = [None, None, None]
+		self.obs_index = -3
 	def reset(self):
-		self.obs_buffer = [None, None, None, None]
-		self.obs_index = -4
+		self.obs_index = -3
 
-		obs = self.pong_env.reset()
+		raw_obs = self.pong_env.reset()
+		obs = preprocess(downscale(raw_obs))
 		self.obs_buffer[self.obs_index] = obs
 		self.obs_index += 1
 
-		return preprocess(downscale(obs))
+		return np.concatenate([obs, obs], axis=2)
 	def step(self, action):
-		obs, reward, terminal, info = self.pong_env.step(action)
+		if action == 0:
+			action = 2
+		else:
+			action = 5
+		raw_obs, reward, terminal, info = self.pong_env.step(action)
+		obs = preprocess(downscale(raw_obs))
+
 		if self.obs_index < 0:
 			old_obs = self.obs_buffer[0]
 		else:
 			old_obs = self.obs_buffer[self.obs_index]
+
+		self.obs_buffer[self.obs_index] = obs
+		self.obs_index += 1
+		if self.obs_index >= 3:
+			self.obs_index = 0
+
+		return np.concatenate([obs, old_obs], axis=2)
+
+
 
 class CartPoleTask:
 	def __init__(self):
@@ -61,7 +76,7 @@ class CartPoleTask:
 	def step(self, action):
 		return self.cartpole_env.step(((-1.,), (1.,))[action])
 	def render(self):
-		return self.cartpole_env.render(self)
+		return self.cartpole_env.render()
 
 class TrivialTask:
     def __init__(self, rng):

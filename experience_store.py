@@ -185,7 +185,10 @@ class TD0Buffer:
         else:
             limit_index = self.cur_index
 
-        sample_indices = rng.integers(limit_index, size=(batch_size))
+        if limit_index > 0:
+            sample_indices = rng.integers(limit_index, size=(batch_size))
+        else:
+            sample_indices = np.zeros((0,), dtype=np.int32)
 
         if self.filled and avoid_last_stored_sample and self.cur_index != 0:
             sample_indices = np.where(sample_indices >= self.cur_index - 1, sample_indices + 1, sample_indices)

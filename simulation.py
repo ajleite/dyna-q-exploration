@@ -50,12 +50,12 @@ class Simulation:
 
                 if not mean_loss is None:
                     self.loss_samples.append((timestep, mean_loss))
-                    print('Loss: ', n, timestep, mean_loss)
-                    print(n_left, n_right)
+                    # print('Loss: ', n, timestep, mean_loss)
+                    # print(n_left, n_right)
                     n_left = 0
                     n_right = 0
                     if last_ep_index < len(self.episode_rewards):
-                        print(np.mean(self.episode_rewards[last_ep_index:],axis=0)[1])
+                        # print(np.mean(self.episode_rewards[last_ep_index:],axis=0)[1])
                         last_ep_index = len(self.episode_rewards)
 
                     epsilon_coordinate = timestep / self.epsilon_final_timestep
@@ -87,3 +87,4 @@ class Simulation:
                     self.task.render()
 
             self.episode_rewards.append((timestep, total_r))
+            print(n, total_r, np.mean(self.episode_rewards[-100:], axis=0)[1])
