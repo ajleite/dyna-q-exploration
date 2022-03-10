@@ -125,3 +125,6 @@ class Simulation:
                 if not n % 100:
                     print('mean reward for episode', n-100, 'to', n, mean_reward)
                     print('best is', self.best_100_episode_return)
+        
+        # everything is done!
+        self.save_trace()
