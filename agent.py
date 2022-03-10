@@ -4,20 +4,6 @@ import experience_store
 import util
 
 
-def get_TD0_target_values(S, A, R, T, S2, target_V_function, discount_factor):
-    ''' Used to get a target value for the TD0 algorithm. '''
-
-    sample_count = S.shape[0]
-
-    ## generate the Q2 values
-    Q2 = np.array(target_V_function(S2))
-
-    # set the future reward to 0 when the transition is terminal
-    Q2 = np.where(T, 0, Q2)
-
-    ## apply the Bellman equation to derive the target Q1 values
-    return R + discount_factor * Q2
-
 class BaseAgent:
     def __init__(self, rng, action_count, Q_network, experience_buffer, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate):
         self.rng = rng
@@ -102,6 +88,21 @@ class MonteCarloAgent(BaseAgent):
         vals = self.experience_buffer.sample_target_values(minibatch_size, self.rng)
         # print(vals[2][0])
         return vals
+
+
+def get_TD0_target_values(S, A, R, T, S2, target_V_function, discount_factor):
+    ''' Used to get a target value for the TD0 algorithm. '''
+
+    sample_count = S.shape[0]
+
+    ## generate the Q2 values
+    Q2 = np.array(target_V_function(S2))
+
+    # set the future reward to 0 when the transition is terminal
+    Q2 = np.where(T, 0, Q2)
+
+    ## apply the Bellman equation to derive the target Q1 values
+    return R + discount_factor * Q2
 
 class TD0Agent(BaseAgent):
     def __init__(self, rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate):
