@@ -27,17 +27,17 @@ def pong_config(task_rng, boring_network=False):
 
     def network_factory(input):
         exceptional_cues = tf.keras.layers.GlobalMaxPool2D()(tf.keras.layers.Conv2D(12, 5, padding='same', activation='relu')(input)) # params: 6x5x5x12+12, size: 12
-        local_dynamics_cues = tf.keras.layers.Conv2D(6, 3, padding='same', activation='relu')(input) # params: 6x3x3x6+6, size: 80x80x6
-        coarse_dynamics = tf.keras.layers.MaxPool2D(pool_size=(8, 8), padding='same')(local_dynamics_cues) # size: 10x10x6
-        locationwise_coarse_dynamics = tf.keras.layers.Flatten()(coarse_dynamics) # size: 600
-        all_cues = tf.keras.layers.Concatenate(axis=-1)([locationwise_coarse_dynamics, exceptional_cues]) # size: 612
+        local_dynamics_cues = tf.keras.layers.Conv2D(12, 3, padding='same', activation='relu')(input) # params: 6x3x3x12+12, size: 80x80x12
+        coarse_dynamics = tf.keras.layers.MaxPool2D(pool_size=(8, 8), padding='same')(local_dynamics_cues) # size: 10x10x12
+        locationwise_coarse_dynamics = tf.keras.layers.Flatten()(coarse_dynamics) # size: 1200
+        all_cues = tf.keras.layers.Concatenate(axis=-1)([locationwise_coarse_dynamics, exceptional_cues]) # size: 1212
 
-        linear_decisions_1 = tf.keras.layers.Dense(50, activation='relu')(all_cues) # params: 612x50+50, size: 50
+        linear_decisions_1 = tf.keras.layers.Dense(50, activation='relu')(all_cues) # params: 1212x50+50, size: 50
         linear_decisions_2 = tf.keras.layers.Dense(20, activation='relu')(linear_decisions_1) # params: 50x20+20, size: 20
 
         return linear_decisions_2
 
-    def boring_network_factory(input):
+    def conventional_network_factory(input):
         conv1 = tf.keras.layers.Conv2D(12, 3, padding='same', activation='relu')(input) # params: 6x3x3x24+24, size: 80x80x24
         pool1 = tf.keras.layers.MaxPool2D(pool_size=(2, 2), padding='same')(conv1) # size: 40x40x24
         conv2 = tf.keras.layers.Conv2D(128, 4, padding='same', activation='relu')(pool1) # params: 24x4x4x384+384, size: 40x40x384
@@ -53,7 +53,7 @@ def pong_config(task_rng, boring_network=False):
         return linear_decisions_2
 
     if boring_network:
-        network_factory = boring_network_factory
+        network_factory = conventional_network_factory
 
     task = tasks.PongTask(task_rng)
 
@@ -64,7 +64,7 @@ def pong_config(task_rng, boring_network=False):
     task_name = 'Pong'
 
     if boring_network:
-        task_name = 'Pong-ConvConv-'
+        task_name = 'Pong-ConvConv'
 
     return task_name, obs_shape, action_count, Q_network, sample_divisor, task
 
@@ -85,7 +85,7 @@ def test_MC_Agent(seed, config, *args, **kwargs):
     if 'Pong' in task_name:
         ag.use_tqdm = True
 
-    sim = simulation.Simulation(ag, task, 4000, 1.0, 0.1, 10000, path=f'MC-{task_name}-{seed}.pickle')
+    sim = simulation.Simulation(ag, task, 2500, 1.0, 0.1, 10000, path=f'MC-{task_name}-{seed}.pickle')
     sim.run(False)
 
 def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
@@ -111,11 +111,11 @@ def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
     else:
         epsilon_final = 0.1
 
-    sim = simulation.Simulation(ag, task, 4000, 1.0, epsilon_final, 100000, path=f'FQI-{task_name}-{seed}.pickle')
+    sim = simulation.Simulation(ag, task, 2500, 1.0, epsilon_final, 10000, path=f'FQI-{task_name}-{seed}.pickle')
     sim.run(False)
 
     if random_actions:
-        sim.best_weights = agent.Q_network.keras_network.get_weights()
+        sim.best_weights = ag.Q_network.keras_network.get_weights()
         sim.save_trace()
 
 def test_DQN_Agent(seed, config, *args, **kwargs):
@@ -133,8 +133,27 @@ def test_DQN_Agent(seed, config, *args, **kwargs):
 
     ag = agent.TD0Agent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
 
-    sim = simulation.Simulation(ag, task, 4000, 1.0, 0.1, 100000, path=f'DQN-{task_name}-{seed}.pickle')
+    sim = simulation.Simulation(ag, task, 2500, 1.0, 0.1, 10000, path=f'DQN-{task_name}-{seed}.pickle')
     sim.run(False)
 
 if __name__ == '__main__':
-    test_FQI_Agent(1, cart_pole_config, random_actions=True)
+    import sys
+    a = sys.argv[1]
+    t = sys.argv[2]
+    seed = int(sys.argv[3])
+    if t == 'pong':
+        tas = pong_config
+    elif t == 'cartpole':
+        tas = cart_pole_config
+    else:
+        print('invalid task')
+        sys.exit()
+
+    if a == 'MC':
+        test_MC_Agent(seed, tas)
+    elif a == 'FQI':
+        test_FQI_Agent(seed, tas)
+    elif a == 'DQN':
+        test_DQN_Agent(seed, tas)
+    else:
+        print('invalid agent')
