@@ -113,7 +113,7 @@ def plot_CNN_weights(best_weights, title=None):
 
     source_names = ['BALL(t)', 'PLR(t)', 'OPP(t)', 'B(t-3)', 'P(t-3)', 'O(t-3)']
 
-    filter_names = ['EM\nDOWN', 'EM\nUP', 'LOC\n(\\#1)', 'LOC\n(\\#2)', f'DYN UP\n(@ {loc_up_x}, {loc_up_y})', f'DYN DOWN\n(@ {loc_down_x}, {loc_down_y})']
+    filter_names = ['EM\nUP', 'EM\nDOWN', 'LOC\n(\\#1)', 'LOC\n(\\#2)', f'LOC UP\n(@ {loc_up_x}, {loc_up_y})', f'LOC DOWN\n(@ {loc_down_x}, {loc_down_y})']
     filter_ids = [strongest_up_feature, strongest_down_feature, strongest_location_features[0], strongest_location_features[1], location_up_feature, location_down_feature]
     filter_types = [emergency_filters, emergency_filters, dynamics_filters, dynamics_filters, dynamics_filters, dynamics_filters]
     n_cols = len(filter_names)
@@ -258,6 +258,16 @@ def plot_cartpole_performance(perfs):
     plt.savefig('plots/cartpole-performance.pdf')
     plt.close()
 
+def plot_random_actions_performance(FQI_perfs, FQI_random_actions_perfs):
+    plt.figure()
+    plt.title('Run performance on cart-pole task')
+    plt.violinplot([FQI_perfs, FQI_random_actions_perfs], showmeans=True)
+    plt.gca().xaxis.set_ticks([1,2],['$\\epsilon$-greedy','Random\nactions'])
+    plt.ylabel('10-episode mean return')
+
+    plt.savefig('plots/random-actions-performance.pdf')
+    plt.close()
+
 def plot_cartpole_Q_function(a, seed, title=None, out_prefix=None):
     task_name, _, _, Q_network, _, t = experiments.cart_pole_config(np.random.default_rng(seed+234579672983459873))
     record = pickle.load(open(f'out/{a}-{task_name}-{seed}.pickle', 'rb'))
@@ -280,7 +290,7 @@ def plot_cartpole_Q_function(a, seed, title=None, out_prefix=None):
         plt.close(figure_diff)
 
 def plot_best_cartpole_Q_functions(seeds, perfs):
-    for seed_set, perf_set, label in zip(seeds, perfs, ["MC", "FQI", "DQN"]):
+    for seed_set, perf_set, label in zip(seeds, perfs, ["MC", "FQI", "DQN", "FQI-RandomActions"]):
         seed = seed_set[np.argmax(perf_set)]
 
         plot_cartpole_Q_function(label, seed, title=f'Best {label} run ({seed})', out_prefix=f'plots/Q_net-cartpole-{label}-{seed}')
