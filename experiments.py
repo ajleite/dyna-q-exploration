@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import tensorflow as tf
 
@@ -69,7 +71,7 @@ def pong_config(task_rng, boring_network=False):
     return task_name, obs_shape, action_count, Q_network, sample_divisor, task
 
 
-def test_MC_Agent(seed, config, *args, **kwargs):
+def test_MC_Agent(seed, config, *args, replay=False, render=False, episodes=2500, **kwargs):
     agent_rng = np.random.default_rng(seed)
     task_rng = np.random.default_rng(seed+234579672983459873)
 
@@ -81,14 +83,31 @@ def test_MC_Agent(seed, config, *args, **kwargs):
     minibatch_size = 512
     experience_period_length = 8192
 
+    if replay:
+        experience_period_length = -1
+
     ag = agent.MonteCarloAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length)
     if 'Pong' in task_name:
         ag.use_tqdm = True
 
-    sim = simulation.Simulation(ag, task, 2500, 1.0, 0.1, 10000, path=f'MC-{task_name}-{seed}.pickle')
-    sim.run(False)
+    path = f'out/MC-{task_name}-{seed}.pickle'
 
-def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
+    if replay:
+        p = pickle.load(open(path,'rb'))
+        ag.Q_network.keras_network.set_weights(p['best_weights'])
+        init_epsilon = 0.
+        final_epsilon = 0.
+        path = None
+    else:
+        init_epsilon = 1.0
+        final_epsilon = 0.1
+
+    sim = simulation.Simulation(ag, task, episodes, init_epsilon, final_epsilon, 10000, path=path)
+    sim.run(render)
+
+    return sim
+
+def test_FQI_Agent(seed, config, random_actions=False, *args, replay=False, render=False, episodes=2500, **kwargs):
     agent_rng = np.random.default_rng(seed)
     task_rng = np.random.default_rng(seed+234579672983459873)
 
@@ -101,6 +120,10 @@ def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
     experience_period_length = 512
     target_Q_network_update_rate = 0.000001
 
+    if replay:
+        experience_period_length = -1
+        target_Q_network_update_rate = 0
+
     ag = agent.TD0Agent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
     if 'Pong' in task_name:
         ag.use_tqdm = True
@@ -111,14 +134,27 @@ def test_FQI_Agent(seed, config, random_actions=False, *args, **kwargs):
     else:
         epsilon_final = 0.1
 
-    sim = simulation.Simulation(ag, task, 2500, 1.0, epsilon_final, 10000, path=f'FQI-{task_name}-{seed}.pickle')
-    sim.run(False)
+    path = f'out/FQI-{task_name}-{seed}.pickle'
+
+    if replay:
+        p = pickle.load(open(path,'rb'))
+        ag.Q_network.keras_network.set_weights(p['best_weights'])
+        epsilon_init = 0.
+        epsilon_final = 0.
+        path = None
+    else:
+        epsilon_init = 1.0
+
+    sim = simulation.Simulation(ag, task, episodes, epsilon_init, epsilon_final, 10000, path=path)
+    sim.run(render)
 
     if random_actions:
         sim.best_weights = ag.Q_network.keras_network.get_weights()
         sim.save_trace()
 
-def test_DQN_Agent(seed, config, *args, **kwargs):
+    return sim
+
+def test_DQN_Agent(seed, config, *args, replay=False, render=False, episodes=2500, **kwargs):
     agent_rng = np.random.default_rng(seed)
     task_rng = np.random.default_rng(seed+234579672983459873)
 
@@ -131,18 +167,43 @@ def test_DQN_Agent(seed, config, *args, **kwargs):
     experience_period_length = 1
     target_Q_network_update_rate = 0.00001
 
+    if replay:
+        experience_period_length = -1
+        target_Q_network_update_rate = 0
+
     ag = agent.TD0Agent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
 
-    sim = simulation.Simulation(ag, task, 2500, 1.0, 0.1, 10000, path=f'DQN-{task_name}-{seed}.pickle')
-    sim.run(False)
+    path = f'out/DQN-{task_name}-{seed}.pickle'
+
+    if replay:
+        p = pickle.load(open(path,'rb'))
+        ag.Q_network.keras_network.set_weights(p['best_weights'])
+        epsilon_init = 0.
+        epsilon_final = 0.
+        path = None
+    else:
+        epsilon_init = 1.0
+        epsilon_final = 0.1
+
+    sim = simulation.Simulation(ag, task, episodes, epsilon_init, epsilon_final, 10000, path=path)
+    sim.run(render)
+
+    return sim
 
 if __name__ == '__main__':
     import sys
     a = sys.argv[1]
     t = sys.argv[2]
     seed = int(sys.argv[3])
+    if len(sys.argv) > 4 and sys.argv[4] == '-r':
+        replay = True
+    else:
+        replay = False
+
     if t == 'pong':
         tas = pong_config
+    elif t == 'pong-conv':
+        tas = lambda rng: pong_config(rng, boring_network=True)
     elif t == 'cartpole':
         tas = cart_pole_config
     else:
@@ -150,7 +211,7 @@ if __name__ == '__main__':
         sys.exit()
 
     if a == 'MC':
-        test_MC_Agent(seed, tas)
+        test_MC_Agent(seed, tas, replay=replay)
     elif a == 'FQI':
         test_FQI_Agent(seed, tas)
     elif a == 'DQN':
