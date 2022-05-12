@@ -35,7 +35,7 @@ class Simulation:
 
     def evaluate(self, eval_index=None, render=False):
         eval_rewards = []
-        for i in range(100):
+        for i in range(50):
             s = self.task.reset()
             t = False
             ep_return = 0
@@ -68,6 +68,10 @@ class Simulation:
         timestep = 0
 
         for n in range(self.num_episodes):
+            # gather greedy evaluation trajectories every 50 training episodes
+            if not n % 50:
+                self.evaluate(n, render)
+
             # 1. gather training trajectories
             s = self.task.reset()
             t = False
@@ -119,12 +123,6 @@ class Simulation:
                 self.episode_Q_rmse.append(ep_Q_rmse/ep_Q_rsme_den)
             if ep_dyn_rsme_den:
                 self.episode_dyn_rmse.append(ep_dyn_rmse/ep_dyn_rsme_den)
-
-            # gather greedy evaluation trajectories every 25 training episodes
-            if n % 25:
-                continue
-
-            self.evaluate(n, render)
 
         # everything is done!
         self.evaluate(self.num_episodes, render)

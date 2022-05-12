@@ -32,34 +32,30 @@ def pong_config(task_rng):
 
     Q_network = network.CNN(obs_shape, action_count, network_factory, 0.0004)
 
-    sample_divisor = 4
-
     task_name = 'Pong'
 
-    return task_name, obs_shape, action_count, Q_network, sample_divisor, task
+    return task_name, obs_shape, action_count, Q_network, task
 
 def pong_PostCNN_config(task_rng):
     obs_shape = (20,)
     action_count = 2
 
-    Q_network = network.FFANN(obs_shape, action_count, [50, 20], 0.0001)
+    Q_network = network.FFANN(obs_shape, action_count, [50, 20], 0.00001)
 
     task = tasks.PongTaskWithCNN(task_rng)
 
-    sample_divisor = 1
-
-    return 'Pong-PostCNN', obs_shape, action_count, Q_network, sample_divisor, task
+    return 'Pong-PostCNN', obs_shape, action_count, Q_network, task
 
 
 def test_DQN_Agent(seed, config, *args, replay=False, render=False, episodes=2500, **kwargs):
     agent_rng = np.random.default_rng(seed)
     task_rng = np.random.default_rng(seed+234579672983459873)
 
-    task_name, obs_shape, action_count, Q_network, sample_divisor, task = config(task_rng, *args, **kwargs)
+    task_name, obs_shape, action_count, Q_network, task = config(task_rng, *args, **kwargs)
 
     discount_factor = 0.99
     experience_buffer_size = 100000
-    training_samples_per_experience_step = 2048 // sample_divisor
+    training_samples_per_experience_step = 4096
     minibatch_size = 512
     experience_period_length = 1
     target_Q_network_update_rate = 0.00001
