@@ -40,7 +40,7 @@ def pong_PostCNN_config(task_rng):
     obs_shape = (20,)
     action_count = 2
 
-    Q_network = network.FFANN(obs_shape, action_count, [50, 20], 0.00001)
+    Q_network = network.FFANN(obs_shape, action_count, [50, 20], 0.0001)
 
     task = tasks.PongTaskWithCNN(task_rng)
 
@@ -55,7 +55,7 @@ def test_DQN_Agent(seed, config, *args, replay=False, render=False, episodes=250
 
     discount_factor = 0.99
     experience_buffer_size = 100000
-    training_samples_per_experience_step = 4096
+    training_samples_per_experience_step = 2048
     minibatch_size = 512
     experience_period_length = 1
     target_Q_network_update_rate = 0.00001
