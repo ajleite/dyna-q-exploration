@@ -1,9 +1,14 @@
+import pickle
+
 import numpy as np
+import tensorflow as tf
 
 import gym
 
 import pybullet_data
 import pybulletgym
+
+import network
 
 def downscale(image):
     new_image = np.zeros((image.shape[0]//2, image.shape[1]//2, image.shape[2]), image.dtype)
@@ -32,13 +37,39 @@ def preprocess(image):
 
     return new_image
 
-class PongTask:
+def load_CNN():
+    obs_shape = (80, 80, 6)
+    action_count = 2
+
+    def network_factory(input):
+        exceptional_cues = tf.keras.layers.GlobalMaxPool2D()(tf.keras.layers.Conv2D(12, 5, padding='same', activation='relu')(input)) # params: 6x5x5x12+12, size: 12
+        local_dynamics_cues = tf.keras.layers.Conv2D(12, 3, padding='same', activation='relu')(input) # params: 6x3x3x12+12, size: 80x80x12
+        coarse_dynamics = tf.keras.layers.MaxPool2D(pool_size=(8, 8), padding='same')(local_dynamics_cues) # size: 10x10x12
+        locationwise_coarse_dynamics = tf.keras.layers.Flatten()(coarse_dynamics) # size: 1200
+        all_cues = tf.keras.layers.Concatenate(axis=-1)([locationwise_coarse_dynamics, exceptional_cues]) # size: 1212
+
+        linear_decisions_1 = tf.keras.layers.Dense(50, activation='relu')(all_cues) # params: 1212x50+50, size: 50
+        linear_decisions_2 = tf.keras.layers.Dense(20, activation='relu')(linear_decisions_1) # params: 50x20+20, size: 20
+
+        return linear_decisions_2
+
+    n = network.CNN(obs_shape, action_count, network_factory, 0.0004)
+
+    p = pickle.load(open(f'out/MC-Pong-1.pickle','rb'))
+    n.keras_network.set_weights(p['best_weights'])
+
+    return n
+
+class PongTaskWithCNN:
     def __init__(self, rng):
         self.pong_env = gym.make('PongNoFrameskip-v0')
         self.obs_buffer = [None, None, None]
         self.obs_index = -3
         self.points = 0
+
         self.rng = rng
+        self.CNN = load_CNN()
+
         self.real_reset()
     def real_reset(self):
         self.obs_index = -3
@@ -50,13 +81,13 @@ class PongTask:
         self.obs_buffer[self.obs_index] = obs
         self.obs_index += 1
 
-        return np.concatenate([obs, obs], axis=2)
+        return self.CNN.apply_headless(np.concatenate([obs, obs], axis=2))
 
     def reset(self):
         if self.obs_index >= 0:
             self.obs_buffer[0] = self.obs_buffer[self.obs_index-1]
             self.obs_index = -3
-        return np.concatenate([self.obs_buffer[0], self.obs_buffer[0]], axis=2)
+        return self.CNN.apply_headless(np.concatenate([self.obs_buffer[0], self.obs_buffer[0]], axis=2))
 
     def step(self, action):
         if action == 0:
@@ -86,7 +117,7 @@ class PongTask:
             if self.obs_index >= 3:
                 self.obs_index = 0
 
-            combined_obs = np.concatenate([obs, old_obs], axis=2)
+            combined_obs = self.CNN.apply_headless(np.concatenate([obs, old_obs], axis=2))
 
             if reward:
                 terminal = 1

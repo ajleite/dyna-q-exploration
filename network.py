@@ -76,12 +76,28 @@ class CNN:
         linear_output = tf.keras.layers.Dense(action_count)(last_layer)
 
         self.keras_network = tf.keras.Model(obs_input, linear_output)
+        self.keras_network_headless = tf.keras.Model(obs_input, last_layer)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
     @tf.function
     def apply(self, S, A):
         return tf.gather(self.keras_network(S), A, batch_dims=1)
+
+    @tf.function
+    def apply_headless(self, S):
+        if len(S.shape) == 3:
+            single = True
+            S = tf.expand_dims(S, axis=0)
+        else:
+            single = False
+
+        out = self.keras_network_headless(S)
+
+        if single:
+            out = tf.squeeze(out, axis=0)
+
+        return out
 
     @tf.function
     def apply_V(self, S):

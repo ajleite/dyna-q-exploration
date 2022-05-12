@@ -70,6 +70,18 @@ def pong_config(task_rng, boring_network=False):
 
     return task_name, obs_shape, action_count, Q_network, sample_divisor, task
 
+def pong_PostCNN_config(task_rng):
+    obs_shape = (20,)
+    action_count = 2
+
+    Q_network = network.FFANN(obs_shape, action_count, [50, 20], 0.0001)
+
+    task = tasks.PongTaskWithCNN(task_rng)
+
+    sample_divisor = 1
+
+    return 'Pong-PostCNN', obs_shape, action_count, Q_network, sample_divisor, task
+
 
 def test_MC_Agent(seed, config, *args, replay=False, render=False, episodes=2500, **kwargs):
     agent_rng = np.random.default_rng(seed)
@@ -201,7 +213,7 @@ if __name__ == '__main__':
         replay = False
 
     if t == 'pong':
-        tas = pong_config
+        tas = pong_PostCNN_config
     elif t == 'pong-conv':
         tas = lambda rng: pong_config(rng, boring_network=True)
     elif t == 'cartpole':
@@ -211,10 +223,10 @@ if __name__ == '__main__':
         sys.exit()
 
     if a == 'MC':
-        test_MC_Agent(seed, tas, replay=replay)
+        test_MC_Agent(seed, tas, replay=replay, render=replay)
     elif a == 'FQI':
         test_FQI_Agent(seed, tas)
     elif a == 'DQN':
-        test_DQN_Agent(seed, tas)
+        test_DQN_Agent(seed, tas, render=replay)
     else:
         print('invalid agent')
