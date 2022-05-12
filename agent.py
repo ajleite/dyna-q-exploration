@@ -34,7 +34,7 @@ class BaseAgent:
 
         return np.array(self.Q_network.apply_A(np.expand_dims(obs, axis=0))[0])
 
-    def store(self, obs, action, reward, terminal):
+    def store(self, obs, action, reward, terminal, obs_2):
         self.experience_buffer.store(obs, action, reward, terminal)
         self.experience_period_step += 1
 
@@ -74,9 +74,9 @@ class BaseAgent:
 
             self.experience_period_step = 0
 
-            return mean_loss
+            return mean_loss, None
 
-        return None
+        return None, None
 
 class MonteCarloAgent(BaseAgent):
     def __init__(self, rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length):
