@@ -80,6 +80,39 @@ def test_DQN_Agent(seed, config, *args, replay=False, render=False, episodes=250
 
     return sim
 
+def test_DynaQ_Agent(seed, config, *args, replay=False, render=False, episodes=2500, **kwargs):
+    agent_rng = np.random.default_rng(seed)
+    task_rng = np.random.default_rng(seed+234579672983459873)
+
+    task_name, obs_shape, action_count, Q_network, task = config(task_rng, *args, **kwargs)
+
+    discount_factor = 0.99
+    experience_buffer_size = 100000
+    training_samples_per_experience_step = 2048
+    minibatch_size = 512
+    experience_period_length = 1
+    target_Q_network_update_rate = 0.00001
+
+    if replay:
+        experience_period_length = -1
+        target_Q_network_update_rate = 0
+
+    ag = agent.DynaQAgent(agent_rng, obs_shape, action_count, Q_network, discount_factor, experience_buffer_size, training_samples_per_experience_step, minibatch_size, experience_period_length, target_Q_network_update_rate)
+
+    path = f'out/DynaQ-{task_name}-{seed}.pickle'
+
+    sim = simulation.Simulation(ag, task, episodes, 0.25, path=path)
+
+    if replay:
+        p = pickle.load(open(path,'rb'))
+        ag.Q_network.keras_network.set_weights(p['best_weights'])
+        sim.path = None
+        sim.evaluate(render=True)
+    else:
+        sim.run(render)
+
+    return sim
+
 if __name__ == '__main__':
     import sys
     a = sys.argv[1]
@@ -100,10 +133,8 @@ if __name__ == '__main__':
         print('invalid task')
         sys.exit()
 
-    if a == 'MC':
-        test_MC_Agent(seed, tas, replay=replay)
-    elif a == 'FQI':
-        test_FQI_Agent(seed, tas)
+    if a == 'DynaQ':
+        test_DynaQ_Agent(seed, tas, replay=replay)
     elif a == 'DQN':
         test_DQN_Agent(seed, tas, replay=replay)
     else:
